@@ -46,6 +46,7 @@ void ScreenManager::initialize()
     StaticScreen *emergencyScreen = new StaticScreen(nullptr, nullptr, emergency, 13);
 
     StaticScreen *teamOfTheYearScreen = new StaticScreen(nullptr, nullptr, team_of_the_year, 14);
+    StaticScreen *projectsScreen = new StaticScreen(nullptr, nullptr, projects_robotics, 15);
 
     StaticScreen *itCompetitiveProgrammingScreen = new StaticScreen(nullptr, nullptr, it_competitive_programming, 15);
     StaticScreen *itcContentCreationScreen = new StaticScreen(nullptr, nullptr, itc_content_creation, 16);
@@ -118,6 +119,9 @@ void ScreenManager::initialize()
     itcScreen1->setPreviousScreen(mainMenu);
     itcScreen1->setNextScreen(itcScreen2);
     itcScreen2->setPreviousScreen(itcScreen1);
+    teamOfTheYearScreen->setPreviousScreen(teamsMenu);
+    projectsScreen->setPreviousScreen(teamOfTheYearScreen);
+    teamOfTheYearScreen->setNextScreen(projectsScreen);
     switchToScreen(logoScreen);
 
     // Store the created screens in the vector for future reference
