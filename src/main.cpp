@@ -18,12 +18,15 @@ U8G2_SSD1309_128X64_NONAME0_F_4W_HW_SPI u8g2(U8G2_R0, OLED_CS, OLED_DC, OLED_RES
 
 ScreenManager screenManager; // Create an instance of ScreenManager
 
+
+
 void setup()
 {
   pinMode(UP_BUTTON, INPUT);
   pinMode(BACK_BUTTON, INPUT);
   pinMode(SELECT_BUTTON, INPUT);
   pinMode(DOWN_BUTTON, INPUT);
+
 
   u8g2.begin();
   screenManager.initialize(); // Initialize your screen manager and load all screens

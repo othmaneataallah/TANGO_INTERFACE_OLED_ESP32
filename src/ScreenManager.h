@@ -17,6 +17,7 @@ public:
     void switchToScreen(Screen *newScreen);
     void handleInput();
     void displayCurrentScreen(U8G2 &u8g2);
+    
     ~ScreenManager(); // Destructor to clean up memory
 };
 

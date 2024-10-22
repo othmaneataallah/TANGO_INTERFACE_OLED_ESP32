@@ -1,3 +1,4 @@
+
 #include "Bitmaps.h"
 
 #include "Screen.cpp"
@@ -8,14 +9,17 @@ class StaticScreen : public Screen
 {
 private:
     const unsigned char *bitmap;
+    int m_mp3Index;
 
     static const uint8_t WIDTH = 128;
     static const uint8_t HEIGHT = 64;
 
 public:
     // Constructor that takes only the bitmap data
-    StaticScreen(Screen *previousScreen, Screen *nextScreen, const unsigned char *bitmap)
-        : Screen(previousScreen, nextScreen), bitmap(bitmap) {}
+    StaticScreen(Screen *previousScreen, Screen *nextScreen, const unsigned char *bitmap, int mp3Index)
+        : Screen(previousScreen, nextScreen), bitmap(bitmap) { 
+            m_mp3Index = mp3Index;
+        }
 
     // Override getType to return STATIC_SCREEN for StaticScreen
     ScreenType getType() const override
@@ -48,6 +52,10 @@ public:
         u8g2.drawStr(textX, 55, text);
 
         u8g2.sendBuffer();
+    }
+
+    int getMp3Index(){
+        return m_mp3Index;
     }
 
     // Destructor

@@ -1,5 +1,12 @@
 #include "ScreenManager.h"
 #include "Bitmaps.h"
+#include <DFRobotDFPlayerMini.h>
+
+// Define a hardware serial interface for DFPlayer
+DFRobotDFPlayerMini myDFPlayer;
+
+const int pinMp3Tx = 16;
+const int pinMp3Rx = 17;
 
 #define UP_BUTTON 32
 #define BACK_BUTTON 33
@@ -11,24 +18,38 @@ extern const unsigned char epd_bitmap_itc_logo[];
 
 void ScreenManager::initialize()
 {
+    Serial.begin(115200); // Use this for debugging
+    // Serial.println(myDFPlayer.readFileCounts());
+    Serial2.begin(9600, SERIAL_8N1, pinMp3Rx, pinMp3Tx);
+    if (myDFPlayer.begin(Serial2))
+    {
+        Serial.println("DFPlayer Mini connected!");
+        myDFPlayer.volume(20); // Set the volume (0-30)
+    }
     // Create and store screens
-    StaticScreen *logoScreen = new StaticScreen(nullptr, nullptr, nullptr);
+    StaticScreen *logoScreen = new StaticScreen(nullptr, nullptr, nullptr, 0);
 
-    StaticScreen *itcScreen1 = new StaticScreen(nullptr, nullptr, itc_screen_1);
-    StaticScreen *itcScreen2 = new StaticScreen(nullptr, nullptr, itc_screen_2);
+    StaticScreen *itcScreen1 = new StaticScreen(nullptr, nullptr, itc_screen_1, 1);
+    StaticScreen *itcScreen2 = new StaticScreen(nullptr, nullptr, itc_screen_2, 2);
 
-    StaticScreen *presidentScreen = new StaticScreen(nullptr, nullptr, president);
-    StaticScreen *vicePresidentScreen = new StaticScreen(nullptr, nullptr, vice_president);
-    StaticScreen *adviserScreen = new StaticScreen(nullptr, nullptr, adviser);
-    StaticScreen *generalSecretaryScreen = new StaticScreen(nullptr, nullptr, general_secretary);
-    StaticScreen *techLeaderScreen = new StaticScreen(nullptr, nullptr, tech_leader);
-    StaticScreen *communityManagerScreen = new StaticScreen(nullptr, nullptr, community_manager);
-    StaticScreen *sponsoringManagerScreen = new StaticScreen(nullptr, nullptr, sponsoring_manager);
-    StaticScreen *talentManagerScreen = new StaticScreen(nullptr, nullptr, talent_manager);
-    StaticScreen *eventManagerScreen = new StaticScreen(nullptr, nullptr, event_manager);
-    StaticScreen *trainingManagerScreen = new StaticScreen(nullptr, nullptr, training_manager);
+    StaticScreen *presidentScreen = new StaticScreen(nullptr, nullptr, president, 3);
+    StaticScreen *vicePresidentScreen = new StaticScreen(nullptr, nullptr, vice_president, 4);
+    StaticScreen *adviserScreen = new StaticScreen(nullptr, nullptr, adviser, 5);
+    StaticScreen *generalSecretaryScreen = new StaticScreen(nullptr, nullptr, general_secretary, 6);
+    StaticScreen *techLeaderScreen = new StaticScreen(nullptr, nullptr, tech_leader, 7);
+    StaticScreen *communityManagerScreen = new StaticScreen(nullptr, nullptr, community_manager, 8);
+    StaticScreen *sponsoringManagerScreen = new StaticScreen(nullptr, nullptr, sponsoring_manager, 9);
+    StaticScreen *talentManagerScreen = new StaticScreen(nullptr, nullptr, talent_manager, 10);
+    StaticScreen *eventManagerScreen = new StaticScreen(nullptr, nullptr, event_manager, 11);
+    StaticScreen *trainingManagerScreen = new StaticScreen(nullptr, nullptr, training_manager, 12);
 
-    StaticScreen *emergencyScreen = new StaticScreen(nullptr, nullptr, emergency);
+    StaticScreen *emergencyScreen = new StaticScreen(nullptr, nullptr, emergency, 13);
+
+    StaticScreen *teamOfTheYearScreen = new StaticScreen(nullptr, nullptr, team_of_the_year, 14);
+
+    StaticScreen *itCompetitiveProgrammingScreen = new StaticScreen(nullptr, nullptr, it_competitive_programming, 15);
+    StaticScreen *itcContentCreationScreen = new StaticScreen(nullptr, nullptr, itc_content_creation, 16);
+    StaticScreen *itcTalksScreen = new StaticScreen(nullptr, nullptr, itc_talks, 17);
 
     // Create options for ExecutiveBoardMenu
     std::vector<Option> executiveBoardMenuOptions = {
@@ -46,7 +67,7 @@ void ScreenManager::initialize()
 
     // Create options for TeamsMenu
     std::vector<Option> teamsMenuOptions = {
-        Option("Robotics", nullptr),
+        Option("Robotics", teamOfTheYearScreen),
         Option("Security", nullptr),
         Option("Web Dev Frontend", nullptr),
         Option("Web Dev Backend", nullptr),
@@ -57,9 +78,9 @@ void ScreenManager::initialize()
 
     // Create options for EventsMenu
     std::vector<Option> eventsMenuOptions = {
-        Option("IT Competitive Programming", nullptr),
-        Option("ITC Content Creation", nullptr),
-        Option("ITC Talks", nullptr),
+        Option("IT Competitive Programming", itCompetitiveProgrammingScreen),
+        Option("ITC Content Creation", itcContentCreationScreen),
+        Option("ITC Talks", itcTalksScreen),
     };
 
     MenuScreen *executiveBoardMenu = new MenuScreen(nullptr, executiveBoardMenuOptions);
@@ -91,7 +112,12 @@ void ScreenManager::initialize()
     MenuScreen *mainMenu = new MenuScreen(nullptr, mainMenuOptions);
 
     executiveBoardMenu->setPreviousScreen(mainMenu);
-
+    teamsMenu->setPreviousScreen(mainMenu);
+    emergencyScreen->setPreviousScreen(mainMenu);
+    eventsMenu->setPreviousScreen(mainMenu);
+    itcScreen1->setPreviousScreen(mainMenu);
+    itcScreen1->setNextScreen(itcScreen2);
+    itcScreen2->setPreviousScreen(itcScreen1);
     switchToScreen(logoScreen);
 
     // Store the created screens in the vector for future reference
@@ -109,6 +135,10 @@ void ScreenManager::initialize()
     screens.push_back(eventManagerScreen);
     screens.push_back(trainingManagerScreen);
     screens.push_back(emergencyScreen);
+    screens.push_back(teamOfTheYearScreen);
+    screens.push_back(itCompetitiveProgrammingScreen);
+    screens.push_back(itcContentCreationScreen);
+    screens.push_back(itcTalksScreen);
     screens.push_back(executiveBoardMenu);
     screens.push_back(teamsMenu);
     screens.push_back(eventsMenu);
@@ -151,15 +181,44 @@ void ScreenManager::handleInput()
 
     if (digitalRead(SELECT_BUTTON) == HIGH)
     {
+        if (currentScreen->getType() == STATIC_SCREEN)
+        {
+            StaticScreen *staticScreen = static_cast<StaticScreen *>(currentScreen);
+            Screen *nextScreen = staticScreen->getNextScreen();
+            if (nextScreen != nullptr)
+            {
+                if (nextScreen->getType() == STATIC_SCREEN) // Ensure nextScreen is a StaticScreen
+                {
+                    StaticScreen *nextStaticScreen = static_cast<StaticScreen *>(nextScreen);
+                    int mp3Index = nextStaticScreen->getMp3Index(); // Get the mp3Index of the next screen
+                    if (mp3Index != 0)
+                    {
+                        myDFPlayer.play(mp3Index); // Play the corresponding mp3 index for the new screen
+                    }
+                }
+                switchToScreen(nextScreen); // Switch to the next screen
+            }
+        }
+        delay(200); // Debounce delay
+
         if (currentScreen->getType() == MENU_SCREEN)
         {
             Screen *nextScreen = static_cast<MenuScreen *>(currentScreen)->getSelectedOptionNextScreen();
             if (nextScreen != nullptr)
             {
-                switchToScreen(nextScreen);
+                if (nextScreen->getType() == STATIC_SCREEN) // Ensure nextScreen is a StaticScreen
+                {
+                    StaticScreen *nextStaticScreen = static_cast<StaticScreen *>(nextScreen);
+                    int mp3Index = nextStaticScreen->getMp3Index(); // Get the mp3Index of the next screen
+                    if (mp3Index != 0)
+                    {
+                        myDFPlayer.play(mp3Index); // Play the corresponding mp3 index for the new screen
+                    }
+                }
+                switchToScreen(nextScreen); // Switch to the next screen
             }
         }
-        delay(200); // Debounce delay
+        delay(200);
     }
 
     if (digitalRead(BACK_BUTTON) == HIGH)
